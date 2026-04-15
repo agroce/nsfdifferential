@@ -1,0 +1,33 @@
+\documentclass[11pt]{article}
+
+\usepackage{fullpage}
+
+\input{titlemacros.tex}
+
+\pagenumbering{gobble}
+
+\begin{document}
+
+\begin{center}
+{\large\sf\textbf{\proptitle}}
+\end{center}
+
+\subsection*{Overview}
+
+Modern embedded systems, from small satellites to autonomous vehicles, rely on software frameworks that define component structure, data flow, and deployment. NASA’s \emph{FPrime} exemplifies this paradigm: its modeling language (FPP) lets developers specify components, typed ports, and topologies, then automatically generate much of the C++ and mission integration code. Despite this rigor, testing and assurance remain largely manual, and existing tools treat embedded code as unstructured binaries.  This project develops methods for \emph{framework-aware fuzzing and lightweight verification}, using FPrime as the central testbed. It exploits framework data to generate test harnesses and guide \emph{semantic-aware fuzzing}. With \textbf{DeepState} as the primary interface and exploratory integration with C++-capable model checkers, the research combines fuzzing with verification to explore \emph{meaningful} behaviors automatically. Framework metadata provides semantic constraints that focus fuzzers on valid inputs; when data violates preconditions, \emph{precondition mapping} transforms it into satisfying assignments.
+The work also introduces \emph{framework-customized mutation testing}, defining operators aligned with FPrime’s architecture to guide and evaluate testing. Methods will be demonstrated on FPrime deployments and generalized to other frameworks.
+
+\subsection*{Keywords}
+
+Fuzzing; model checking; mutation testing; model-based development; embedded software
+
+\subsection*{Intellectual Merit}
+
+The project advances automated assurance by exploiting \emph{framework semantics} to guide testing and lightweight verification. Existing fuzzers and model checkers ignore component interfaces, message schemas, and topologies that structure real systems. Integrating semantic information makes bug-finding \emph{framework-aware}.
+Key contributions include: (1) automatic harness generation from framework models; (2) fuzzer guidance using model-derived preconditions and mapping of invalid data to valid cases; (3) integrated model checking for invariant and assertion validation; and (4) framework-level mutation operators for quantitative adequacy assessment. Together these form a new synthesis of methods grounded in developer practice. Evaluation on FPrime mission software will measure improvements in fault detection and automation.
+\subsection*{Broader Impacts}
+
+Reliable embedded software underpins the success of space missions, autonomous systems, and critical infrastructure. Automating assurance through framework-aware analysis will reduce human effort while improving reliability and security in complex embedded frameworks. Immediate beneficiaries include NASA and its partners: enhanced testing and verification tools will strengthen the dependability and ease of development of FPrime-based flight software, advancing both mission safety and scientific return. The project will train students in integrated fuzzing, symbolic reasoning, and modelx-based design, producing engineers fluent in both formal and practical methods. Educational materials will feed into courses on embedded systems and testing, and results will be disseminated through NASA, academic, and open-source channels. 
+
+
+\end{document}

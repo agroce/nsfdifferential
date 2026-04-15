@@ -1,0 +1,56 @@
+\section{Research Plan}
+
+\subsection{Automated Test Generation}
+\input{framactodeepstate}
+
+\subsection{Automated Specification Checking}
+\input{modifies}
+
+\subsection{Framework Aware Mutation Analysis}
+\input{mutation}
+
+\subsection{Integrating Software Model Checking}
+
+\paragraph{Bounded Model Checking:}
+\input{cbmcplan}
+
+\paragraph{Explicit-State Model Checking:}
+\input{spinplan}
+
+\subsection{Case Studies} % for Ecological Monitoring and Control}
+\label{sec:case-study}
+
+The above approaches will be evaluated and designed in the context of
+case studies based on actual FPrime models.  Initially, these will be
+open source code, likely beginning with the FPrime system reference
+from the FPrime community, and moving to actual flight projects as
+available.  After initial work, we aim to collaborate with FPrime
+users and team members at NASA/JPL to apply our prototypes to
+in-progress missions in a non-disruptive fashion.  Finally, we will,
+in the final months of the project, investigate developing a harness
+transform mapping for a widely used framework with different
+semantics and usage context, e.g. most likely AUTOSAR~\cite{AUTOSAR},
+which is widely used in the automotive community, another important
+domain for embedded systems with stringent correctness and reliability
+requirements.
+
+We will evaluate improvements to fuzzing (and other fault detection,
+e.g., non-exhaustive model checking) approaches using both
+traditional coverage and actual fault-based evaluations, and using
+mutation testing.  There will be considerable synergy between
+automation and extension of mutation for framework-based code and
+evaluation of testing improvements for said code.
+
+This project will support one graduate student, who will be involved
+in all phases of the project, initially focusing on understanding
+FPrime and DeepState, then working with PI Groce on the fundamental
+harness generation work as a foundation for other aspects of the
+project; we expect that initial work on the LLVM modifies checker and
+framework-aligned mutation will be underway by the second year, with
+model checker integration starting in the third year.  For this
+project, we have budgeted summer pay for the student, since the amount
+of software development the student will be responsible for is
+unusually high.  If we are able to place the student in a summer JPL
+position, this will be re-allocated to, e.g., hire undergraduates to work on implementation tasks,
+recruited from PI Groce's upper-level classes, or for travel to work
+with JPL.  
