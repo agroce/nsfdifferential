@@ -82,7 +82,17 @@ effectiveness.  All too often, the approach taken is to independently
 fuzz two implementations, then compare their behavior over the union
 of the produced corpuses of interesting inputs.  While this can
 discover bugs, it is effectively throwing away most of the power of
-fuzzing, in two important ways:  <NOTE>
+fuzzing, in two important ways.  First, the implementations are only
+tested differentially for a small number of inputs, the final results
+of fuzzing runs on the two separate systems; this missed out on the
+opportunity to detect divergence and bugs on potentially millions or
+billions of executions.  Second, the two independent corpuses are only
+derived from efforts to cover behaviors of the two systems
+independently; is an inputs does not produce novelty in terms of either system
+in isolation, but represents a unique \emph{pair of coverage patterns} for a
+shared input, this method is simply incapable of identifying and
+exploiting such inputs.  Such inputs, however, are, intuitively, the
+most promising in terms of detecting divergences in implementation behaviors.
 
 With more effort, users of differential fuzzing can compile two
 implementations in such a way that a fuzzer can see the combined
@@ -90,8 +100,6 @@ coverage of both systems, essentially a program path of {\tt r1 =
   f(x); r2 = g(x); assert (r1==r2);}.  This overcomes the above
 objections, but still in fact leaves much to be desired, in terms of
 taking advantage of the differential nature of the fuzzing problem.
-
-
 
 \section{Intellectual Merit}
 \input{merit}
