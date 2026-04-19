@@ -13,20 +13,25 @@ its behavior matches function $g$ that is \emph{an independent
 as cases where $f(x) \neq g(x)$.  The ``functions'' $f$ and $g$ in
 realistic settings are seldom actual code-level functions, of course,
 but more typically complex systems ranging from data-structure
-implementations to complex parsers and, especially, compilers and file
-systems.
+implementations to complex parsers, cryptographic protocols~\cite{aumasson2017automated} and, especially, compilers~\cite{Differential} and file
+systems~\cite{ICSEDiff}.
 
 The ubiquity of differential approaches to testing compilers and file
 systems is no accident:  these are two critical pieces of system
 infrastructure where genuinely independent implementations are often
-available.  Of course, since file systems may rest on different
+available, and standards such as ANSI C and POSIX make comparison
+reasonable, if not trivial; the same applies, though less frequently,
+to cryptographic algorithm and protocol implementations.  Of course, since file systems may rest on different
 hardware substrates, and compilers may make differenct choices where a
-language allows for implementation defined behavior, in practice even
+language like C allows for implementation defined behavior, in practice even
 in these best-case scenarios, the problem is usually not one of checking that $f(x)
 = g(x)$, but of checking that $O_f(f(I_f(x))) = O_g(g(I_g(x)))$, where
 $O_f$, $O_g$, $I_f$, and $I_g$ are respectively, output and input
 abstraction functions for $f$ and $g$, that allow for known
-differences in behavior and input spaces.
+differences in behavior and input spaces, and there are often also
+known inputs that violate the differential specification in a known
+and allowed way, making the full specification of the form $P(x)
+\Rightarrow O_f(f(I_f(x))) = O_g(g(I_g(x)))$.
 
 Despite these complexities, differential testing is extremely
 attractive, especially in settings where inputs are automatically (and
@@ -39,9 +44,9 @@ extremely exotic, input.  This leads to results such as the difference
 between functional tests and fuzzing harnesses for Bitcoin core, where
 equivalent, almost 100\% branch and code coverage yields huge
 discrepancies in mutation detection, with functional tests detecting
-over 80\% of injected bugs while fuzzing, despite perhaps more
+almost 80\% of injected bugs while fuzzing, despite perhaps more
 aggressive exploration of the state space, detects only 12\% of these
-bugs.  A differential specification makes it possible for fuzzing to
+bugs~\cite{seip2022}.  A differential specification makes it possible for fuzzing to
 detect subtle semantic errors, not just memory safety violations and
 assertion failures.
 
@@ -50,23 +55,40 @@ grow in the future, for two reasons, both deriving from the use of
 LLMs and agentic coding.  First, the primary reason differential
 fuzzing is seldom used in practice is that the cost of an independent
 implementation of a software system, even in security or safety
-critical settings, is prohibitive.  This cost is especially high given
+critical settings, is usually prohibitive.  This cost is especially high given
 that previous work has shown that ``independent'' implementations are
-seldom as independent (in terms of correlation of bugs) as desirable.
-Only in cases of extremely complex specifications implemented by
-radically separated teams (e.g., compilers and file systems) is this
-cost manageable, in large part because in these unusual settings a
-second implementation is essentially free.  Code synthesis by AI
+seldom as independent (in terms of correlation of bugs) as desirable~\cite{KNIGHT1985159}.
+These means that differential testing via separate implementations of
+functionality is usually only performed  in cases of extremely complex specifications implemented by
+radically separated teams (e.g., compilers and file systems) with
+orthogonal incentives to produce their own implementations, or for very
+simple specifications such as data structures.  Code synthesis by AI
 models sidesteps this problem:  once a specification that produces a
 single workable implementation is available, having a single model
 produce multiple implementations is often relatively cheap.  Using
 multiple models or changing prompts to focus code generation on, for
 example, a faster implementation, an implementation with a smaller
 memory footprint, a more readable implementation, an implementation
-using an unusual algorithm, and so forth, seems like to produce
+using an unusual algorithm, and so forth, seems likely to produce
 controlled divergence that may exceed that of human developers.  If
 the development cost of multiple implementations is radically reduced,
 the advantages of differential specification are clear.
+
+One pre-AI way to work around the cost of a second implementation, of
+course, is to use differential fuzzing in a \emph{regression} setting,
+comparing a new version of software to an older, better-tested
+version.  However, in practice, new versions of a software system are often introduced precisely
+because the functional interface has changed in some way, and the work
+required to conceive, implement, and maintain a mapping between new
+and old versions (which will be less stable, as each new version tends to
+remove some parts of the current mapping, as the ``old'' version is
+now the version that was new, as well as add new changes) discourages
+use in this setting, especially as the bug correlation problem reduces
+the power of differential testing.  Again, LLMs are probably
+well-suited to constructing and maintaining version mappings at low
+cost\footnote{We believe this wil be especially true if LLMs have
+  access to a high-quality DSL for constructing differential
+  harnesses, which is one of the goals of this proposal.}.
 
 Second, differential approaches seem ideal for probing ambiguities in
 specifications presented to AIs, and AI misunderstandings:  if
@@ -88,7 +110,7 @@ of fuzzing runs on the two separate systems; this missed out on the
 opportunity to detect divergence and bugs on potentially millions or
 billions of executions.  Second, the two independent corpuses are only
 derived from efforts to cover behaviors of the two systems
-independently; is an inputs does not produce novelty in terms of either system
+independently; if an input does not produce novelty in terms of either system
 in isolation, but represents a unique \emph{pair of coverage patterns} for a
 shared input, this method is simply incapable of identifying and
 exploiting such inputs.  Such inputs, however, are, intuitively, the
