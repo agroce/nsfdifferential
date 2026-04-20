@@ -116,12 +116,133 @@ shared input, this method is simply incapable of identifying and
 exploiting such inputs.  Such inputs, however, are, intuitively, the
 most promising in terms of detecting divergences in implementation behaviors.
 
-With more effort, users of differential fuzzing can compile two
+With somewhat more effort, users of differential fuzzing can compile two
 implementations in such a way that a fuzzer can see the combined
-coverage of both systems, essentially a program path of {\tt r1 =
+coverage of both systems, essentially a program path over the merged program{\tt r1 =
   f(x); r2 = g(x); assert (r1==r2);}.  This overcomes the above
 objections, but still in fact leaves much to be desired, in terms of
-taking advantage of the differential nature of the fuzzing problem.
+taking advantage of the differential nature of the specification.
+
+\subsection{First-Class Differential Fuzzing}
+
+In computer science, fully leveraging an approach tends to require
+making it truly \emph{first-class}, supported by language and analysis
+tools; without OO constructs or native-language threads, objects and
+concurrency are limited in applicability, and the recent jump in
+sophisticated usage of functional programming techniques in mainstream
+languages can essentially be traced to the widespread availability of
+real lambdas and closures.
+
+Similarly, differential specification (arguably the most powerful and
+``usable'' of all specification techniques) can only be fully
+exploited when \emph{fuzzing algorithms} and \emph{specification
+  techniques} are differential-aware.  This requires abstracting away
+from the specifics of a particular instance of differential
+testing/fuzzing.  The most important previous work along this line,
+the NEZHA framework of Pesios et al.~\cite{nezha} offered a start on
+such an approach, and proved extremely successful (finding differences
+between implementations at a rate 20-50 times higher than previous
+approaches) in practice, but failed to truly offer up first-class
+differential fuzzing.
+
+In order to understand the limits of current approaches, it is useful
+to think about a very simplified description of what a modern
+mutation-based fuzzer such as AFL, libFuzzer, or Centipede, does, at a
+high level that essentially applies to all fuzzers:
+
+\begin{enumerate}
+\item First, a fuzzer selects an input, a \emph{seed} that it has already executed
+ (possibly presented to it as part of an initial \emph{seed corpus} of
+  interesting inputs, e.g., valid media files when fuzzing a media
+  parser), based on a \emph{seed scheduling} algorithm that selects
+  the most promising such inputs to work with.  At this stage the
+  fuzzer may also compute an \emph{energy}: how much time to spend
+  working on this particular seed (energy can also be modified once
+  the fuzzer starts seeing results of working with the seed, but we
+  are offering a simplified version of the process here).
+\item Then, repeatedly, up until the limits set by \emph{energy}, the
+  fuzzer \emph{mutates} the seed, making a randomly chosen change to
+  the input; these changes can be simple byte-based mutations (often
+  referred to as ``havoc'' operators) or more targeted and
+  domain-specific, as in some compiler-fuzzing tools~\cite{cc2022}.
+\item For each such modified variant of the seed, the fuzzer executes
+  the mutant of the seed; if a crash is detected (in differential
+  fuzzing, the executable should be set up so that divergence in
+  behaviors triggers a crash) the input is preserved as representing a
+  potential bug.  If the input does not cause a crash, the fuzzer
+  determines if the input triggers \emph{novel} behavior.  The
+  definition of novelty can vary; some fuzzers only consider inputs
+  that cover new branches or basic code blocks novel (this is
+  libFuzzer's default mode, for example); other fuzzers (AFL and
+  family, for example) make use of a more complex edge-hit-count
+  pattern approach that can approximate a form of path coverage.  If
+  the input is novel, it is added to the set of seeds to schedule and
+  spend energy on collected by the fuzzer, and the loop eventually
+  returns to step 1, when energy for the current seed is exhausted.
+  The identification of novel inputs is what lets the fuzzer slowly
+  accumulate new interesting program behaviors and deeply explore the
+  program, searching for bugs.
+\end{enumerate}
+
+First, NEZHA's fundamental contribution was making a tuple
+representation of coverage across compared methods,
+$\langle \text{cov}(f), \text{cov}(g) \rangle$. This is a huge advance on
+simply attempting to cover both implementations independently, then
+compare over interesting paths for either approach; it captures the
+importance of asymmetry and unusual \emph{pairings} of coverage paths
+between compared implementations.  However, this is in essence already
+done by AFL/AFL++ and other fuzzers, if the differential targets are
+compiled into a single instrumented binary, and NEZHA's experimental
+evaluation unfortunately only compares to
+application of AFL to generate inputs based on a single
+implementation.  NEZHA's $\delta$-based measure of input novelty is essentially based on a flattening
+of output (in black-box settings) or program path (in grey-box
+settings) tuples, so that novel pairings of $f$ and $g$ behaviors are
+observable; when a single executable with a global path is produced
+from the differential fuzzing targets in AFL/AFL++, the same result is
+essentially achieved.  The advantage NEZHA shows over an
+implementation of what they call ``global coverage'' in  libFuzzer is due
+to libFuzzer's simpler novel branch/block heuristic for determining
+which inputs are interesting.
+
+However, despite missing the fact that their grey-box approach to
+$\delta$-based novelty is likely simply equivalent to a
+single-compiled-binary AFL/AFL++ approach, the NEZHA paper shows how
+to \emph{take differential fuzzing seriously}.  This proposal aims to
+go beyond this approach by modifying fuzzer internals (implemented on
+top of the industry-standard AFL++ platform) to take advantage of the
+differential problem in all stages of the basic fuzzing algorithm
+presented above:
+
+\begin{itemize}
+  \item First, and most important, we aim to extend the notion of
+    novelty to preserve, and thus explore from, inputs that do not find novel
+    behavior of either $f$ or $g$ alone, but which (going beyond NEZHA and
+    AFL-family methods) expose cases where either of $f$ or $g$
+    \emph{changes behavior} more in response to a shared change in an input
+    seed.  Intuitively, cases where one implementation's behavior is
+    much more affected by a change to an input than the other are ``on
+    the path'' to exposing full behavioral divergence.  This requires
+    a new approach to novelty evaluation not previously explored in
+    the fuzzing literature to our knowledge (relative/response-based
+    novelty), where the behavior of a mutated seed is considered
+    \emph{relative to the original seed behavior}.
+    \item Second, the extent of such changes can be used to inform
+      scheduling and energy decisions; the more input changes
+      differently affect behavior, the more the input merits urgent
+      investigation and substantial computation resources.
+     \item Third, these basic ideas can be further extended in the
+       case where $f$ and $g$ share a common code base, since $f$ is a new
+       version of $g$, not an independent implementation.  In these
+       cases program edges can be mapped into sets of shared and
+       differing code locations, and the structure of the code changes
+       can be exploited to better focus on the changes made to $g$.
+       \item Finally, the fuzzer can identify when certain byte
+         locations (or higher-order structure entities, in theory) or
+         mutation operators are especially prone to produce large
+         divergences in response for $f$ and $g$ and spend more time
+         applying those more-productive mutants.
+         \end{itemize}
 
 \section{Intellectual Merit}
 \input{merit}
