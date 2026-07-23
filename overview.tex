@@ -251,13 +251,17 @@ presented above:
 
 Lack of fuzzer awareness of differential structure contributing to
 weakness in finding differentially-defined bugs is almost certainly
-not the primary reason differential testing is not more widely used,
-however, even ignoring the cost of developing independent
+\emph{not} the primary reason differential testing is not more widely used, even ignoring the cost of developing independent
 implementations (which may now be mitigated by AI code synthesis).
-Rather, many developers do not use differential testing methods
+Many developers do not use differential testing methods
 because in practice, the problem is seldom one of comparing two
-implementations with identical behavior.  Differential
-testing harnesses such as that for the widely used Pyfakefs Python
+implementations with identical behavior, and the effort required to
+make differential testing actually useful seems overwhelming.  While
+the first prong of this proposal will, we believe, greatly improve the
+effectiveness of differential testing for those already using it, it
+cannot be widely used without advances in differential specification.
+
+Differential testing harnesses such as that for the widely used Pyfakefs Python
 mock filesystem~\cite{TSTLHarness} often devote up to half their
 code to allowance for divergences between a tested and reference
 system.  Moreover, the intellectual effort required to construct such
@@ -265,6 +269,9 @@ abstraction code and determine which divergences are important and
 which are spurious is a major burden on would-be users of differential
 testing, even when analysis reveals the categorization to be, in some
 sense, ``obvious.''
+
+Gulzar et al. in 2019 reported on the (large and growing, at that
+time) adoption of differential testing at Google~\cite{PercepDiff}.
 
 \section{Intellectual Merit}
 \input{merit}
