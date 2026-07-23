@@ -1637,6 +1637,36 @@ year = "2005",
 pages = "38--47"
 }
 
+@article{li2026enhancing,
+  title={Enhancing differential testing with llms for testing deep learning libraries},
+  author={Li, Meiziniu and Li, Dongze and Liu, Jianmeng and Cao, Jialun and Tian, Yongqiang and Cheung, Shing-Chi},
+  journal={ACM Transactions on Software Engineering and Methodology},
+  volume={35},
+  number={4},
+  pages={1--39},
+  year={2026},
+  publisher={ACM New York, NY}
+}
+
+@article{herbold2023differential,
+  title={Differential testing for machine learning: an analysis for classification algorithms beyond deep learning},
+  author={Herbold, Steffen and Tunkel, Steffen},
+  journal={Empirical Software Engineering},
+  volume={28},
+  number={2},
+  pages={34},
+  year={2023},
+  publisher={Springer}
+}
+
+@inproceedings{barany2018finding,
+  title={Finding missed compiler optimizations by differential testing},
+  author={Barany, Gerg{\"o}},
+  booktitle={Proceedings of the 27th international conference on compiler construction},
+  pages={82--92},
+  year={2018}
+}
+
 @inproceedings{vmcai08,
 author = "Alex Groce and Rajeev Joshi",
 title = "Extending Model Checking with Dynamic Analysis",
@@ -1948,14 +1978,11 @@ year = {2019}}
  pages = {504--515},
 }
 
-@inproceedings{libFuzzer,
-  title={Continuous Fuzzing with libFuzzer and AddressSanitizer},
-  author={Serebryany, Kostya},
-  booktitle={Cybersecurity, Development (SecDev), IEEE},
-  pages={157--157},
-  year={2016},
-  organization={IEEE}
-}
+@misc{TSTLHarness,
+  author = "Alex Groce and mrbean-bremen",
+  title =  "Pyfakefs Harness",
+  howpublished="\url{https://github.com/agroce/tstl/blob/master/examples/pyfakefs/fakeosmodule.tstl}"
+  }
 
 @INPROCEEDINGS{Marinescu:2012:MTS:2337223.2337308,
   author = {Marinescu, Paul Dan and Cadar, Cristian},
@@ -2325,7 +2352,44 @@ pages = "172--186"
  keywords = {Diversity, Random testing, Test generation},
 } 
 
+@inproceedings{chen2016coverage,
+  title={Coverage-directed differential testing of JVM implementations},
+  author={Chen, Yuting and Su, Ting and Sun, Chengnian and Su, Zhendong and Zhao, Jianjun},
+  booktitle={proceedings of the 37th ACM SIGPLAN Conference on Programming Language Design and Implementation},
+  pages={85--99},
+  year={2016}
+}
 
+@inproceedings{chen2019deep,
+  title={Deep differential testing of JVM implementations},
+  author={Chen, Yuting and Su, Ting and Su, Zhendong},
+  booktitle={2019 IEEE/ACM 41st International Conference on Software Engineering (ICSE)},
+  pages={1257--1268},
+  year={2019},
+  organization={IEEE}
+}
+
+@inproceedings{StaticDiff,
+  author       = {Alex Groce and
+                  Iftekhar Ahmed and
+                  Josselin Feist and
+                  Gustavo Grieco and
+                  Jiri Gesi and
+                  Mehran Meidani and
+                  Qihong Chen},
+  title        = {Evaluating and Improving Static Analysis Tools Via Differential Mutation
+                  Analysis},
+  booktitle    = {21st {IEEE} International Conference on Software Quality, Reliability
+                  and Security, {QRS} 2021, Hainan, China, December 6-10, 2021},
+  pages        = {207--218},
+  publisher    = {{IEEE}},
+  year         = {2021},
+  url          = {https://doi.org/10.1109/QRS54544.2021.00032},
+  doi          = {10.1109/QRS54544.2021.00032},
+  timestamp    = {Wed, 16 Mar 2022 22:32:22 +0100},
+  biburl       = {https://dblp.org/rec/conf/qrs/GroceAFGGMC21.bib},
+  bibsource    = {dblp computer science bibliography, https://dblp.org}
+}
 
 @inproceedings{Manticore,
   author    = {Mark Mossberg and
@@ -3099,12 +3163,36 @@ pages = "488--497",
 year = "2000"
 }
 
+@inproceedings{lehmann2018feedback,
+  title={Feedback-directed differential testing of interactive debuggers},
+  author={Lehmann, Daniel and Pradel, Michael},
+  booktitle={Proceedings of the 2018 26th ACM Joint Meeting on European Software Engineering Conference and Symposium on the Foundations of Software Engineering},
+  pages={610--620},
+  year={2018}
+}
+
+@inproceedings{chen2015guided,
+  title={Guided differential testing of certificate validation in SSL/TLS implementations},
+  author={Chen, Yuting and Su, Zhendong},
+  booktitle={Proceedings of the 2015 10th Joint Meeting on Foundations of Software Engineering},
+  pages={793--804},
+  year={2015}
+}
+
 @inproceedings{TestVer,
 author = "N. Sharygina and D. Peled",
 title = "A Combined Testing and Verification Approach for Software Reliability",
 booktitle = "Formal Methods for Increasing Software Productivity, International Symposium of Formal Methods Europe",
 pages = "611--628",
 year = "2001"
+}
+
+@inproceedings{jung2008privacy,
+  title={Privacy oracle: a system for finding application leaks with black box differential testing},
+  author={Jung, Jaeyeon and Sheth, Anmol and Greenstein, Ben and Wetherall, David and Maganis, Gabriel and Kohno, Tadayoshi},
+  booktitle={Proceedings of the 15th ACM conference on Computer and communications security},
+  pages={279--288},
+  year={2008}
 }
 
 @inproceedings{WhiteBox,
@@ -5614,7 +5702,34 @@ author = {Lionel C. Briand and J\"{u}rgen W\"{u}st}
  publisher = {ACM},
  address = {New York, NY, USA},
  keywords = {t-way interaction coverage, combinatorial interaction testing, covering arrays, event driven software, test suite prioritization},
-} 
+}
+
+@inproceedings{libFuzzer,
+  title={Continuous Fuzzing with libFuzzer and AddressSanitizer},
+  author={Serebryany, Kosta},
+  booktitle={Cybersecurity, Development (SecDev), IEEE},
+  pages={157--157},
+  year={2016},
+  organization={IEEE}
+}
+
+
+@misc{centipede,
+  author = {Google},
+  title = {Centipede: a distributed fuzzing engine},
+  howpublished = {\url{https://github.com/google/fuzztest/tree/main/centipede}},
+}
+
+@inproceedings{AFLplusplus-Woot20,
+        author = {Andrea Fioraldi and Dominik Maier and Heiko Ei{\ss}feldt and Marc Heuse},
+        title = {AFL++ : Combining Incremental Steps of Fuzzing Research},
+        booktitle = {14th {USENIX} Workshop on Offensive Technologies ({WOOT} 20)},
+        year = {2020},
+        url = {https://www.usenix.org/conference/woot20/presentation/fioraldi},
+        publisher = {{USENIX} Association},
+        month = aug,
+}
+
 
 @Inbook{Belli2007,
 author="Belli, Fevzi

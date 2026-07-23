@@ -2,35 +2,33 @@
 
 \paragraph{Improving Software System Reliability:} A key element of
 this proposal's approach is to focus on realistically deployable
-techniques.  We initially aim
-for strong integration with NASA's FPrime~\cite{fprime,fprimerepo}
-open source
-flight software architecture and platform; PI Groce is already in
-discussion with engineers at NASA's Jet Propulsion Laboratory, and
-engaged in producing tests for the FPrime autocoder using DeepState,
-and has previously sent summer students to work with NASA's FPrime team.
-This integration will allow our
-methods to be applied to CubeSat missions, instruments, and other flight software
-systems, leading to improved reliability for low-budget space-based
-scientific efforts.  We expect, in the long run, that our approaches
-will lead to more reliable and robust development in many embedded and
-cyberphysical systems domains.  Moreover, advances in precondition
-handling in fuzzing, extension of DeepState to use model checking
-backends for full verification of some kinds of code, and empirical
-evidence on the value of domain-specific mutation operators will apply
-to software bug-finding efforts well beyond the domain of
-framework-based embedded systems.
+techniques.  All methods developed will aim for seamless integration
+with the AFL++ fuzzing system, and thus immediate practical
+applicability to real-world problems.  Differential testing is widely
+used in various aspects of critical systems infrastructure, and
+improvements in the ability to detect bugs using differential methods
+are likely to contribute to software reliability.  Additionally, as
+noted in the problem statement, it seems likely that differential
+approaches are both made more practical by, and essential for the
+reliability of, LLM and agentic coding efforts.  It is likely that
+even future workflows with few humans in the loop will make use of
+differential techniques, and given that fuzzing driven by random
+mutations is likely an orthogonal source of bugs to LLM-based static
+analysis of code, such methods will be more important for finding bugs
+made by LLMs that they cannot reliably detect by only their own
+``native'' methods.
 
 \paragraph{Education and Outreach:}
 The proposed research yields several opportunities for enhancing CS
 education, recruiting new CS majors, and retaining CS students.  PI Groce will work with the NAU Student ACM Chapter to
 present a series of ``excursions in testing'' that introduce automated
-testing to students, using DeepState to find bugs in real world code,
+testing to students, using differential approaches to find bugs in real world code,
 including code from media player libraries.  The
 work of Guzdial \cite{Guzdial} has shown that media computation is an
 effective way to both recruit and retain students in computer science. Groce also teaches
-a class on automated testing of embedded systems that can present
-FPrime and project results.  Groce's prior
+classes (undergraduate and graduate, including a required course in
+NAU's Software Engineering major) on automated testing that can
+present project results.  Groce's prior
 engagement in teaching and mentoring high school students (including
 as summer students who have published their work in major venues) and working with
 local technically-oriented 4H chapters, including in rural communities

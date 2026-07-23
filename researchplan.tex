@@ -12,8 +12,16 @@ Primary products of this proposal are therefore:
   differential fuzzing problems and
   to the specialized case of versions with largely overlapping
   implementations.
+  \item Modalities for automating common cases where the task is
+    differential testing of two binaries that operate over a
+   file or standard input, the common use of AFL and other fuzzers:
+   these will include calibration tools for taking binaries and
+   automatically proposing a differential comparison scheme (composed
+   of those available to users) that is sufficiently sensitive to
+   detect subtle bugs, but applies simple abstractions and choices of
+   detection channels to reduce obvious false positives.
 \item A framework/light DSL for declarative, legible, differential harness
-  construction that works with the above algorithms and cooperates
+  construction that works with the above fuzzing algorithms and cooperates
   with the DeepState unit-fuzzing framework, but does not require use
   of DeepState.
 \item Evaluations of the above; these will be peformed both in terms of standard fuzzer

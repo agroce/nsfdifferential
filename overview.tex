@@ -58,7 +58,7 @@ implementation of a software system, even in security or safety
 critical settings, is usually prohibitive.  This cost is especially high given
 that previous work has shown that ``independent'' implementations are
 seldom as independent (in terms of correlation of bugs) as desirable~\cite{KNIGHT1985159}.
-These means that differential testing via separate implementations of
+This means that differential testing via separate implementations of
 functionality is usually only performed  in cases of extremely complex specifications implemented by
 radically separated teams (e.g., compilers and file systems) with
 orthogonal incentives to produce their own implementations, or for very
@@ -106,7 +106,7 @@ of the produced corpuses of interesting inputs.  While this can
 discover bugs, it is effectively throwing away most of the power of
 fuzzing, in two important ways.  First, the implementations are only
 tested differentially for a small number of inputs, the final results
-of fuzzing runs on the two separate systems; this missed out on the
+of fuzzing runs on the two separate systems; this misses out on the
 opportunity to detect divergence and bugs on potentially millions or
 billions of executions.  Second, the two independent corpuses are only
 derived from efforts to cover behaviors of the two systems
@@ -118,7 +118,8 @@ most promising in terms of detecting divergences in implementation behaviors.
 
 With somewhat more effort, users of differential fuzzing can compile two
 implementations in such a way that a fuzzer can see the combined
-coverage of both systems, essentially a program path over the merged program{\tt r1 =
+coverage of both systems, essentially a program path over the merged
+program {\tt r1 =
   f(x); r2 = g(x); assert (r1==r2);}.  This overcomes the above
 objections, but still in fact leaves much to be desired, in terms of
 taking advantage of the differential nature of the specification.
@@ -131,7 +132,8 @@ tools; without OO constructs or native-language threads, objects and
 concurrency are limited in applicability, and the recent jump in
 sophisticated usage of functional programming techniques in mainstream
 languages can essentially be traced to the widespread availability of
-real lambdas and closures.
+real lambdas and closures, rather than weaker proxies such as object
+dispatch simulations of lambdas, or C's function pointers.
 
 Similarly, differential specification (arguably the most powerful and
 ``usable'' of all specification techniques) can only be fully
@@ -147,7 +149,8 @@ differential fuzzing.
 
 In order to understand the limits of current approaches, it is useful
 to think about a very simplified description of what a modern
-mutation-based fuzzer such as AFL, libFuzzer, or Centipede, does, at a
+mutation-based fuzzer such as AFL++~\cite{AFLplusplus-Woot20},
+libFuzzer~\cite{libFuzzer}, or Google's Centipede~\cite{centipede}, does, at a
 high level that essentially applies to all fuzzers:
 
 \begin{enumerate}
@@ -175,7 +178,7 @@ high level that essentially applies to all fuzzers:
   that cover new branches or basic code blocks novel (this is
   libFuzzer's default mode, for example); other fuzzers (AFL and
   family, for example) make use of a more complex edge-hit-count
-  pattern approach that can approximate a form of path coverage.  If
+  pattern approach that can approximate a form of (acyclic) path coverage~\cite{ISSTA13}.  If
   the input is novel, it is added to the set of seeds to schedule and
   spend energy on collected by the fuzzer, and the loop eventually
   returns to step 1, when energy for the current seed is exhausted.
@@ -242,7 +245,26 @@ presented above:
          mutation operators are especially prone to produce large
          divergences in response for $f$ and $g$ and spend more time
          applying those more-productive mutants.
-         \end{itemize}
+       \end{itemize}
+
+       \subsection{First-Class Differential Specification}
+
+Lack of fuzzer awareness of differential structure contributing to
+weakness in finding differentially-defined bugs is almost certainly
+not the primary reason differential testing is not more widely used,
+however, even ignoring the cost of developing independent
+implementations (which may now be mitigated by AI code synthesis).
+Rather, many developers do not use differential testing methods
+because in practice, the problem is seldom one of comparing two
+implementations with identical behavior.  Differential
+testing harnesses such as that for the widely used Pyfakefs Python
+mock filesystem~\cite{TSTLHarness} often devote up to half their
+code to allowance for divergences between a tested and reference
+system.  Moreover, the intellectual effort required to construct such
+abstraction code and determine which divergences are important and
+which are spurious is a major burden on would-be users of differential
+testing, even when analysis reveals the categorization to be, in some
+sense, ``obvious.''
 
 \section{Intellectual Merit}
 \input{merit}
