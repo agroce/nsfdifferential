@@ -160,12 +160,14 @@ presented above:
  However, this ignores how F was derived:  F is the result of mutating
  input E.  The small change made to the input did not change the
  behavior of function $f$ but dramatically changed the behavior of
- function $g$.  This potentially highly significant fact is invisible
+ function $g$.  Had F been produced from D, on the other hand, the
+ beahvior of \emph{both} $f$ and $g$ would be seen to be changed, and the
+ previously seen path therefore uninteresting.  This potentially highly significant fact is invisible
  unless the fuzzer is aware of the structure of the fuzzing problem,
  and both distinguishes $f$ and $g$ behaviors \emph{and} makes use of
- the ``provenance'' of fuzzing inputs, so that behavior change or lack
+ the \emph{provenance} of fuzzing inputs, so that behavior change or lack
  of change can be \emph{observed} and \emph{exploited} as a signal of
- behavioral divergence.
+ behavioral divergence.  
 
  All of the above proposed differential adaptations of the core
  mutation-driven fuzzing algorithm are derived from this insight.  For

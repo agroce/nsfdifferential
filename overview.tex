@@ -21,8 +21,8 @@ systems is no accident:  these are two critical pieces of system
 infrastructure where genuinely independent implementations are often
 available, and standards such as ANSI C and POSIX make comparison
 reasonable, if not trivial; the same applies, though less frequently,
-to cryptographic algorithm and protocol implementations.  Of course, since file systems may rest on different
-hardware substrates, and compilers may make differenct choices where a
+to cryptographic algorithm and protocol implementations.  Since file systems may rest on different
+hardware substrates, and compilers may make different choices where a
 language like C allows for implementation defined behavior, in practice even
 in these best-case scenarios, the problem is usually not one of checking that $f(x)
 = g(x)$, but of checking that $O_f(f(I_f(x))) = O_g(g(I_g(x)))$, where
@@ -140,7 +140,7 @@ exploited when \emph{fuzzing algorithms} and \emph{specification
   techniques} are differential-aware.  This requires abstracting away
 from the specifics of a particular instance of differential
 testing/fuzzing.  The most important previous work along this line,
-the NEZHA framework of Pesios et al.~\cite{nezha} offered a start on
+the NEZHA framework of Petsios et al.~\cite{nezha} offered a start on
 such an approach, and proved extremely successful (finding differences
 between implementations at a rate 20-50 times higher than previous
 approaches) in practice, but failed to truly offer up first-class
@@ -148,7 +148,7 @@ differential fuzzing.
 
 This proposal aims to develop practical first-class differential-aware
 fuzzing algorithms and highly effective automated and manual methods
-for building differential specifications, that is constucting
+for building differential specifications, that is constructing
 functions of the form $P(x)
 \Rightarrow O_f(f(I_f(x))) = O_g(g(I_g(x)))$.  The underlying logic of
 this proposal is that differential testing's potential is, at present,
