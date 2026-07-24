@@ -24,12 +24,35 @@ Primary products of this proposal are therefore:
   construction that works with the above fuzzing algorithms and cooperates
   with the DeepState unit-fuzzing framework, but does not require use
   of DeepState.
-\item Evaluations of the above; these will be peformed both in terms of standard fuzzer
-  evaluation methods, using existing differential harnesses and
-  problems that have been addressed in previous work on differential
-  fuzzing/testing and in terms of LLM-based case studies, exploring
-  both the ability of LLMs to make use of the differential testing
-  framework/DSL and the effectiveness of differential fuzzing in
-  agentic coding workflows (including ability to prompt for tailored,
-  highly divergent, implementations).
 \end{enumerate}
+
+These products will be evaluated in multiple ways.  First, algorithmic
+fuzzing changes can be evaluated using field-standard methods for
+evaluating fuzzing research~\cite{FuzzerHicks}.  The same differential
+fuzzing problems can be executed using both baseline AFL++ and
+combinations of proposed techniques (in the standard ablation study
+approach) to determine the overall effectiveness of proposed methods
+and of each proposed component.  Benchmarks for this aspect of
+evaluation can be drawn both from existing differential harnesses
+available in open source repositories and in the differential fuzzing
+literature.
+
+The thrust of differential specification work focusing on binary pairs
+and no manual harness construction can be evaluated by reporting false
+positive and false negative rates, demonstrating the ability of the
+provided comparison modes to handle benchmark problems and the
+effectiveness of the auto-calibration modes.
+
+Evaluating a manual harness construction DSL is less straightforward
+and quantitative; we plan first to simply compare code sizes of
+harnesses with the same specification with and without the DSL
+constructs, which should demonstrate the ability of the approach to
+concisely express standard differential testing problems.  A second
+approach, tied to our expectation that differential testing may be an
+important tool in AI-based code synthesis, is to pose problems in both
+harness construction and harness understanding to state of the art
+coding AIs, with and without the DSL.  Our hypothesis is that given a
+good DSL and documentation for it, AIs will be able to construct more effective
+harnesses and answer questions about harnesses better than when
+differential specifications are expressed in less concise code.
+

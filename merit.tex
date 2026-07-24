@@ -1,3 +1,308 @@
+The essence of this proposal is the hypothesis that software security
+and reliability could be greatly enhanced by development of concepts,
+algorithms, and tools for exploiting the similarity of many software
+systems.  The case of comparison of different versions of the same
+system is the most obvious of these, where differential testing is a
+kind of abstraction of regression testing; the most important case for
+software security is the large body of fundamental systems software
+that implements functionality that is repeatedly implemented because
+it is so foundational to a variety of software systems.  Such
+``ubiquitous'' software artifacts (compilers, file systems,
+cryptographic algorithms, regular expression tools, data structures)
+are notably also frequently involved in particularly dangerous
+software vulnerabilities, because they are so widely used in different
+systems, and invoked in low-level code including core security
+functionality and operating system settings that operates with
+elevated privileges or direct impact on security properties of a system.
+
+\subsection{First-Class Differential Fuzzing}
+
+
+In order to understand the limits of current approaches, it is useful
+to think about a very simplified description of what a modern
+mutation-based fuzzer such as AFL++~\cite{AFLplusplus-Woot20},
+libFuzzer~\cite{libFuzzer}, or Google's Centipede~\cite{centipede}, does, at a
+high level that essentially applies to all fuzzers:
+
+\begin{enumerate}
+\item First, a fuzzer selects an input, a \emph{seed} that it has already executed
+ (possibly presented to it as part of an initial \emph{seed corpus} of
+  interesting inputs, e.g., valid media files when fuzzing a media
+  parser), based on a \emph{seed scheduling} algorithm that selects
+  the most promising such inputs to work with.  At this stage the
+  fuzzer may also compute an \emph{energy}: how much time to spend
+  working on this particular seed (energy can also be modified once
+  the fuzzer starts seeing results of working with the seed, but we
+  are offering a simplified version of the process here).
+\item Then, repeatedly, up until the limits set by \emph{energy}, the
+  fuzzer \emph{mutates} the seed, making a randomly chosen change to
+  the input; these changes can be simple byte-based mutations (often
+  referred to as ``havoc'' operators) or more targeted and
+  domain-specific, as in some compiler-fuzzing tools~\cite{cc2022}.
+\item For each such modified variant of the seed, the fuzzer executes
+  the mutant of the seed; if a crash is detected (in differential
+  fuzzing, the executable should be set up so that divergence in
+  behaviors triggers a crash) the input is preserved as representing a
+  potential bug.  If the input does not cause a crash, the fuzzer
+  determines if the input triggers \emph{novel} behavior.  The
+  definition of input novelty can vary; some fuzzers only consider inputs
+  that cover new branches or basic code blocks novel (this is
+  libFuzzer's default mode, for example); other fuzzers (AFL and
+  family, for example) make use of a more complex edge-hit-count
+  pattern approach that can approximate a form of (acyclic) path coverage~\cite{ISSTA13}.  If
+  the input is novel, it is added to the set of seeds to schedule and
+  spend energy on collected by the fuzzer, and the loop eventually
+  returns to step 1, when energy for the current seed is exhausted.
+  The identification of novel inputs is what lets the fuzzer slowly
+  accumulate new interesting program behaviors and deeply explore the
+  program, searching for bugs.
+\end{enumerate}
+
+First, NEZHA's fundamental contribution was making a tuple
+representation of coverage across compared methods,
+$\langle \text{cov}(f), \text{cov}(g) \rangle$. This is a huge advance on
+simply attempting to cover both implementations independently, then
+compare over interesting paths for either approach; it captures the
+importance of asymmetry and unusual \emph{pairings} of coverage paths
+between compared implementations.  However, this is in essence already
+done by AFL/AFL++ and other fuzzers, if the differential targets are
+compiled into a single instrumented binary, and NEZHA's experimental
+evaluation unfortunately only compares to
+application of AFL to generate inputs based on a single
+implementation.  NEZHA's $\delta$-based measure of input novelty is essentially based on a flattening
+of output (in black-box settings) or program path (in grey-box
+settings) tuples, so that novel pairings of $f$ and $g$ behaviors are
+observable; when a single executable with a global path is produced
+from the differential fuzzing targets in AFL/AFL++, the same result is
+essentially achieved.  The advantage NEZHA shows over an
+implementation of what they call ``global coverage'' in  libFuzzer is due
+to libFuzzer's simpler novel branch/block heuristic for determining
+which inputs are interesting.
+
+However, despite missing the fact that their grey-box approach to
+$\delta$-based novelty is likely simply equivalent to a
+single-compiled-binary AFL/AFL++ approach, the NEZHA paper shows how
+to \emph{take differential fuzzing seriously}.  This proposal aims to
+go beyond this approach by modifying fuzzer internals (implemented on
+top of the industry-standard AFL++ platform) to take advantage of the
+differential problem in all stages of the basic fuzzing algorithm
+presented above:
+
+\begin{itemize}
+  \item First, and most important, we aim to extend the notion of
+    novelty to preserve, and thus explore from, inputs that do not find novel
+    behavior of either $f$ or $g$ alone, but which (going beyond NEZHA and
+    AFL-family methods) expose cases where either of $f$ or $g$
+    \emph{changes behavior} more in response to a shared change in an input
+    seed.  Intuitively, cases where one implementation's behavior is
+    much more affected by a change to an input than the other are ``on
+    the path'' to exposing full behavioral divergence.  This requires
+    a new approach to novelty evaluation not previously explored in
+    the fuzzing literature to our knowledge (relative/response-based
+    novelty), where the behavior of a mutated seed is considered
+    \emph{relative to the original seed behavior}.
+    \item Second, the extent of such changes can be used to inform
+      scheduling and energy decisions; the more input changes
+      differently affect behavior, the more the input merits urgent
+      investigation and substantial computation resources.
+     \item Third, these basic ideas can be further extended in the
+       case where $f$ and $g$ share a common code base, since $f$ is a new
+       version of $g$, not an independent implementation.  In these
+       cases program edges can be mapped into sets of shared and
+       differing code locations, and the structure of the code changes
+       can be exploited to better focus on the changes made to $g$.
+       \item Finally, the fuzzer can identify when certain byte
+         locations (or higher-order structure entities, in theory) or
+         mutation operators are especially prone to produce large
+         divergences in response for $f$ and $g$ and spend more time
+         applying those more-productive mutants.
+       \end{itemize}
+
+ Fundamentally, these ideas can be summarized as taking the fact that
+ differential fuzzing differs from most fuzzing in that it has a
+ mapping between two pairs of behaviors to exploit seriously.  In
+ order to make this concept clear, it is easiest to focus on the first
+ proposed algorithmic change, which seems most novel and most
+ promising.
+
+ Consider two functions $f$ and $g$ that implement a critical cryptographic function,
+ where the $g$ is a more complex, but more efficient,
+ implementation of the same algorithm.  The specification here is simple:  the two
+ functions should, given the same inputs (e.g., keys and ciphertext,
+ or protocol message), yield
+ the same outputs (plaintext, protocol configuration structure).
+ Now, consider the behavior of a traditional AFL-style harness calling
+ both functions on a set of inputs A, B, C, D, and E.  Suppose the
+ harness is constructed such that first $f$ is called, then $g$, and
+ the paths taken by the functions, where $f_1$ etc. are path edges traversed
+ in the respective functions are:
+
+ \begin{tabular}{l|r|r}
+   Input & $f$ path & $g$ path\\
+   \hline
+   A & $f_1, f_4, f_6$ & $g_1, g_3, g_4, g_5$\\
+       B & $f_1, f_4, f_6$ & $g_1, g_2, g_4, g_5$\\
+           C & $f_1, f_2, f_3$ & $g_1, g_3, g_4, g_5$\\
+               D & $f_1, f_2, f_3$ & $g_1, g_3, g_4, g_6$\\
+                   E & $f_1, f_4, f_6$ & $g_3, g_2, g_8, g_9$\\
+ \end{tabular}
+
+ All of these inputs will be saved as novel, since they all execute an
+ overall new sequence of edges.  This is the case despite the fact
+ that input C, for example, does not produce novel behavior in either
+ $f$ or $g$ alone, it is only novel with respect to both functions.
+ That such sequences need to be seen as novel for effective
+ differential fuzzing is a key insight of NEZHA.
+
+ Now consider the input F.  F produces the path $f_1, f_4, f_6$ $g_1, g_3, g_4, g_5$.  Should F be saved as an important input to explore
+ from?  AFL++ or the NEZHA approach would say no; F produces the same
+ path through $f$ and $g$ as A, the very first input explored.
+ However, this ignores how F was derived:  F is the result of mutating
+ input E.  The small change made to the input did not change the
+ behavior of function $f$ but dramatically changed the behavior of
+ function $g$.  This potentially highly significant fact is invisible
+ unless the fuzzer is aware of the structure of the fuzzing problem,
+ and both distinguishes $f$ and $g$ behaviors \emph{and} makes use of
+ the ``provenance'' of fuzzing inputs, so that behavior change or lack
+ of change can be \emph{observed} and \emph{exploited} as a signal of
+ behavioral divergence.
+
+ All of the above proposed differential adaptations of the core
+ mutation-driven fuzzing algorithm are derived from this insight.  For
+ instance, the insight behind the third method, which tries to exploit
+ cases where $f$ and $g$ share a largely identical code base, is that
+ when a change to an input produces changes in the \emph{shared} code
+ that does not differ between $f$ and $g$ this is likely to be highly
+ significant:  behavior has flowed out of the non-shared portions of
+ the code base to influence the behavior in ostensibly identical
+ parts of the implementation.  Changes wholly contained in divergent
+ parts of the code may be due to accidental aspects of the way the
+ code behaves; this seems,
+ intuitively, less likely when there is data flow of difference to
+ shared code.  If we simplify the model by assuming the changed code
+ is contained in a single block, modifying a unit of functionality
+ that is internally modified but intended to have the same black box
+ behavior, we have identified a case where the two black boxes must be
+ behaving differently, since code outside the box has changed
+ behavior.  The conclusion is less confident with more complex
+ relationships between changed versions, but the basic argument for
+ elevating the signal on divergence in shared code seems at minimum
+ deserving of empirical exploration.
+
+ \subsection{First-Class Differential Specification}
+
+Lack of fuzzer awareness of differential structure contributing to
+weakness in finding differentially-defined bugs is almost certainly
+\emph{not} the primary reason differential testing is not more widely used, even ignoring the cost of developing independent
+implementations (which may now be mitigated by AI code synthesis).
+Many developers do not use differential testing methods
+because in practice, the problem is seldom one of comparing two
+implementations with perfectly identical behavior, and the effort required to
+make differential testing actually useful can seem overwhelming.  While
+the first prong of this proposal will, we believe, greatly improve the
+effectiveness of differential testing for those already using it, it
+is unlikely to be widely used without accompanying advances in \emph{differential specification}.
+
+Gulzar et al. in 2019 reported on the (large and growing, at that
+time) adoption of differential testing at Google~\cite{PercepDiff}.
+Their results, based on a survey of 117 software engineers, in-depth
+interviews with 5 experienced users of differential testing, and
+analysis of over 2,000 differential tests, showed two key problems
+with differential testing.  First, differential tests, as practiced,
+usually based on data drawn from end-to-end execution of production
+systems, were noted as slow.  This problem is in part addressable by better
+differential fuzzing, which can produce fast-executing tests that
+concentrate on difference-exposing tests.  The second most common
+problem was that manual comparison of results is tedious and
+difficult, and clear pass/fail results are hard to obtain.  This
+problem is therefore significant in the setting of the study, manual difference
+testing between different versions of the same software system.  It is
+much more important in a differential fuzzing context, where hundreds
+or thousands of false positives may be generated, behavior is more
+likely to be found in obscure space of the system state space, and the
+comparison may be between truly independent implementations of a standard
+functionality, rather than versions of the same software system.
+
+Differential testing harnesses such as that for the widely used Pyfakefs Python
+mock file system~\cite{pyfakefs,TSTLHarness} often devote up to half their
+code to allowance for divergences between a tested and reference
+system; the POSIX standard is, like many other important standards,
+partly nondeterministic.  The intellectual effort required to construct such
+abstraction code and determine which divergences are important and
+which are spurious is a major burden on would-be users of differential
+testing, even when analysis reveals the categorization to be, in some
+sense, ``obvious.''
+
+Users of differential fuzzing can be divided, roughly, into two
+classes:
+
+\begin{itemize}
+  \item Users expecting a high degree of automation, who do not want
+    to invest a large human effort in constructing a differential specification.  In such cases, often but not always focusing on
+    different versions of the same software system, users are focused
+    on ease-of-use of differential testing, not on its raw power.  These users may be most likely to be developers of
+    the code under test, and aim to use differential testing in large
+    part to detect impact of code changes they have made outside the
+    scope of their own unit tests and module~\cite{PercepDiff}.
+    \item Users who are willing to devote considerable effort to
+      producing a differential specification.  These cases tend to be
+      focused on using differential testing as a means for detecting
+      very subtle bugs and obscure behaviors, not using differential
+      testing primarily as an additional, easy-to-apply, extension of
+      unit tests.  File system and cryptographic algorithm
+      differential testing and other high-stakes systems software
+      where non-developer testing experts may be involved is a
+      paradigmatic instance of this kind of high-effort differential
+      testing.
+    \end{itemize}
+
+These two modes of differential testing/fuzzing naturally suggest two
+modes of specification.  In the first case, the ideal implementation
+of differential fuzzing takes as input two binaries, and compares
+their behavior, with no additional work required by the user.  In some
+cases, this is sufficient.  More commonly, however, some complexity
+remains:  two systems may produce output on a channel such as a file
+or stdout/stderr that is almost identical, but diverges in, e.g., the
+content of text messages.  In other cases, behavior may not be so
+simply observable, and users may want to compare less visible aspects
+of behavior, such as system call sequences, maximum memory footprint,
+or execution time.  Of course, an AFL++ extension can be developed
+that allows users to specify such behavioral comparison standards on
+the command line, including potentially inline regexps or
+configuration files to control allowed divergence in text-based
+outputs, but the triage problem of understanding divergences is a
+major burden on users.  We propose to not only implement and classify
+an extensive set of composable, customizable behavioral comparison
+functions, but develop automated calibration methods that use the
+ability of fuzzing to produce a statistically large number of
+behaviors to estimate a good comparison function.  Inferring a change
+in output message from a large body of stdout traces that differ only
+by a regexp substitution is the kind of task that can and should be
+automated, and a configuration generator can reduce the risk of such
+an approach by presenting a summary of consistent differences to
+users in an easily-understood format, e.g.:
+
+\begin{code}
+- Version B consistently replaces``FILE OR DIRECTORY'' with 
+``FILE/DIRECTORY'' in stderr messages
+- Version B consistently reorders the {\emph rename} and {\emph close}
+POSIX calls from {\emph rename --> close} to {\emph close --> rename}
+- Version B omitted a call to \emph{clock\_gettime()} from 95\% of
+all observed executions; a set of representatives of the 5\% of cases
+still calling this function were saved to the {\tt exceptions/} directory
+\end{code}
+
+The second case is where the user of differential fuzzing aims to
+put in the effort to construct a harness that controls inputs to avoid
+areas of known divergence, to introduce complex behavioral pairings
+(e.g., where fault injection is performed in a simulated flash file
+system, and this has to be handled by intercepting and modifying calls
+to a ``real'' file system appropriately~\cite{ICSEDiff}), or where the
+mapping between inputs and outputs to the two systems is far too
+complex to infer from statistical observation, and must be modeled by
+a domain expert.
+
+WRITE MORE ABOUT THIS PART, BRING IN TSTL
 
 \subsection{PI Qualifications}
 
