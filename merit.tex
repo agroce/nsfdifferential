@@ -306,6 +306,14 @@ a domain expert.
 
 WRITE MORE ABOUT THIS PART, BRING IN TSTL
 
+Conceptually, the key feature of differential specification is that
+the core of the problem is \emph{avoiding false positives}: in
+traditional, assertion-based testing, or even property-based testing,
+specification effort is usually largely invested in defining failure; in differential
+testing, the effort is in avoiding reporting spurious failures, since
+the default equality relation defines all but a very small set of
+executions as failing, with no additional effort.
+
 \subsection{PI Qualifications}
 
 PI Groce has a long history with software analysis and verification,
