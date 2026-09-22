@@ -167,26 +167,40 @@ presented above:
  and both distinguishes $f$ and $g$ behaviors \emph{and} makes use of
  the \emph{provenance} of fuzzing inputs, so that behavior change or lack
  of change can be \emph{observed} and \emph{exploited} as a signal of
- behavioral divergence.  
+ behavioral divergence.  In short, we aim to exploit a new kind of
+ signal for fuzzing: \emph{relational coverage} between compared
+ programs, where not only coverage itself matters, but the
+ \emph{relation between changes in coverage, in terms of both
+   existence and magnitude}, given fixed changes in input.
 
  All of the above proposed differential adaptations of the core
- mutation-driven fuzzing algorithm are derived from this insight.  For
- instance, the insight behind the third method, which tries to exploit
+ mutation-driven fuzzing algorithm are derived from this insight that
+ once a fuzzing problem is seen as existing between two or more
+ targets, this new \emph{relational} notion of coverage becomes
+ potentially very valuable.  The exact nature of relational coverage
+ concepts can be quite subtle, involving both static and dynamic
+ notions of change.
+
+ For instance, the insight behind the third method listed above, which tries to exploit
  cases where $f$ and $g$ share a largely identical code base, is that
  when a change to an input produces changes in the \emph{shared} code
  that does not differ between $f$ and $g$ this is likely to be highly
  significant:  behavior has flowed out of the non-shared portions of
  the code base to influence the behavior in ostensibly identical
- parts of the implementation.  Changes wholly contained in divergent
+ parts of the implementation; the seemingly fixed and uninteresting
+ relation between unchanged code regions is in fact non-fixed and
+ complex, mediated by data flow from changed regions.  Changes \emph{wholly contained} in divergent
  parts of the code may be due to accidental aspects of the way the
  code behaves; this seems,
  intuitively, less likely when there is data flow of difference to
- shared code.  If we simplify the model by assuming the changed code
+ shared code.  This idea therefore makes use of relations between the
+ differentially compared programs at both the static and dynamic
+ level.  If we simplify the model by assuming the changed code
  is contained in a single block, modifying a unit of functionality
  that is internally modified but intended to have the same black box
  behavior, we have identified a case where the two black boxes must be
  behaving differently, since code outside the box has changed
- behavior.  The conclusion is less confident with more complex
+ behavior.  The conclusion is less confident with more complex non-contiguous
  relationships between changed versions, but the basic argument for
  elevating the signal on divergence in shared code seems at minimum
  deserving of empirical exploration.

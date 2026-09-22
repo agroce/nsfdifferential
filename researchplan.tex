@@ -1,5 +1,46 @@
 \section{Research Plan}
 
+\subsection{Thrusts}
+
+There are two major thrusts of this proposal, both including
+conceptual and engineering aspects, with feedback between concept,
+evaluation, and engineering guiding the research activity.
+
+The first thrust, and the most important, is the exploration of the
+ability of relational coverage concepts to improve the effectiveness
+of differential fuzzing, given a fixed, well-defined, problem of
+detecting behavior divergences among two or more implementations of
+the same functionality.  We believe the core idea of relational
+coverage is likely to significantly enhance the effectiveness of
+differential fuzzing for bug detection.  This aspect of the project
+will consist of implementing the simplest plausible versions of the
+kinds of ideas proposed above, and exploring their effectiveness via
+preliminary evaluations of the techniques using the same evaluation
+techniques as proposed below for the publication of the research.  We
+expect some feedback from experiments to be necessary, since adding
+new core techniques to AFL++ will involved many detailed decisions
+that may impact fuzzing effectiveness but will either be
+underdetermined by the basic concepts or will involve fuzzer
+throughput driven tradeoffs (approximations similar to those in the
+standard fuzzer compression of coverage information, for example).
+
+The second thrust involves two sub-parts: first, since many potential users of
+differential fuzzing are dissuaded from applying the technique by the
+cost of constructing a differential harness, we aim to develop a
+principled approach to automatic calibration of harnesses using a
+variety of possible difference signals (output to stdout/stderr, file
+outputs, time and space performance, etc.).  Second, because some of
+the most interesting and important differential fuzzing problems
+require careful thought and complex abstraction mechanisms, or
+removing parts of the input space not handled by one or more
+differentially compared implementations, we will investigate the
+development of a DSL for differential harnesses, based on C++, that
+can integrate with the DeepSpace fuzzer and Google's FuzzTest
+infrastructure, without depending on either.  This aspect of the
+research will necessarily be more exploratory, initially involving
+efforts to transform differential harnesses from the literature into
+standalone implementations or potentially automatable AFL++ modes.
+
 \subsection{Products}
 
 Primary products of this proposal are therefore:
@@ -26,6 +67,8 @@ Primary products of this proposal are therefore:
   of DeepState.
 \end{enumerate}
 
+\subsection{Evaluation}
+
 These products will be evaluated in multiple ways.  First, algorithmic
 fuzzing changes can be evaluated using field-standard methods for
 evaluating fuzzing research~\cite{FuzzerHicks}.  The same differential
@@ -35,24 +78,40 @@ approach) to determine the overall effectiveness of proposed methods
 and of each proposed component.  Benchmarks for this aspect of
 evaluation can be drawn both from existing differential harnesses
 available in open source repositories and in the differential fuzzing
-literature.
+literature: for standard benchmarks in fuzzing literature,
+differential problems can be constructed by using different software
+versions with known divergences or by using source or binary mutation,
+removing all mutants detected by a standard corpus (forcing
+non-trivial differential problems).  For problems taken from the
+differential fuzzing literature, including special-purpose
+differential fuzzing for a fixed domain, numerous real-world examples
+should be available, with complex problems across very different
+implementations, not just differening versions of the same problem.
+
+For these experiments studying the basic effectiveness of relational
+coverage and relationally-guided mutation in fuzzing, the most
+interesting benchmarks will correspond to standard fuzzing metrics:
+time to first detected divergence and number of known divergences
+discovered (we expect there may be tradeoffs between these, which we
+aim to explore in a more systematic way than most fuzzing evaluations).
 
 The thrust of differential specification work focusing on binary pairs
-and no manual harness construction can be evaluated by reporting false
-positive and false negative rates, demonstrating the ability of the
-provided comparison modes to handle benchmark problems and the
+and automatic oracle generation can be evaluated by reporting false
+positive and false negative rates, determining the
 effectiveness of the auto-calibration modes.
 
 Evaluating a manual harness construction DSL is less straightforward
 and quantitative; we plan first to simply compare code sizes of
-harnesses with the same specification with and without the DSL
+harnesses, based on problems from the differential fuzzing literature,
+implementing the same specification with and without the DSL
 constructs, which should demonstrate the ability of the approach to
 concisely express standard differential testing problems.  A second
 approach, tied to our expectation that differential testing may be an
 important tool in AI-based code synthesis, is to pose problems in both
 harness construction and harness understanding to state of the art
 coding AIs, with and without the DSL.  Our hypothesis is that given a
-good DSL and documentation for it, AIs will be able to construct more effective
-harnesses and answer questions about harnesses better than when
-differential specifications are expressed in less concise code.
+good DSL and documentation for it, AIs will be able to construct more
+effective harnesses and answer questions about harnesses better than
+when differential specifications must be expressed in less concise
+code, without idiomatic ``shortcuts.''
 
