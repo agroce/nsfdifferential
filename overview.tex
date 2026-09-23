@@ -3,12 +3,12 @@
 %\subsection{Problem Statement}
 %\input{problem}
 
-Differential testing has long been considered one of the most powerful
+Differential testing~\cite{Differential} has long been considered one of the most powerful
 approaches to ensure the security, reliability, and correctness of
 software, \emph{when applicable}.  Differential testing offers a unique
 solution to the difficulty of specifying what a software system should
 (and should not) do: in essence, it tests a function $f$ by checking
-its behavior matches function $g$ that is \emph{an independent
+its behavior matches function $g$ that is \emph{an (ideally independent)
   implementation of the same functionality}, and defines test failures
 as cases where $f(x) \neq g(x)$.  The ``functions'' $f$ and $g$ in
 realistic settings are seldom actual code-level functions, of course,
@@ -23,17 +23,19 @@ available, and standards such as ANSI C and POSIX make comparison
 reasonable, if not trivial; the same applies, though less frequently,
 to cryptographic algorithm and protocol implementations.  Since file systems may rest on different
 hardware substrates, and compilers may make different choices where a
-language like C allows for implementation defined behavior, in practice even
+language like C allows for implementation-defined behavior, in practice even
 in these best-case scenarios, the problem is usually not one of checking that $f(x)
 = g(x)$, but of checking that $O_f(f(I_f(x))) = O_g(g(I_g(x)))$, where
 $O_f$, $O_g$, $I_f$, and $I_g$ are respectively, output and input
 abstraction functions for $f$ and $g$, that allow for known
 differences in behavior and input spaces, and there are often also
 known inputs that violate the differential specification in a known
-and allowed way, making the full specification of the form $P(x)
-\Rightarrow O_f(f(I_f(x))) = O_g(g(I_g(x)))$.
+and allowed way, making the full specification of the complex
+structure $P(x)
+\Rightarrow O_f(f(I_f(x))) = O_g(g(I_g(x)))$, where the guard $P$ and
+$O$ and $I$ abstraction functions may also be quite complex.
 
-Despite these complexities, differential testing is extremely
+Despite these difficulties, differential testing is extremely
 attractive, especially in settings where inputs are automatically (and
 stochastically) generated, such as random testing and \emph{fuzzing}.
 Indeed, arguably the fundamental limitation of modern fuzzing, despite
@@ -59,7 +61,7 @@ critical settings, is usually prohibitive.  This cost is especially high given
 that previous work has shown that ``independent'' implementations are
 seldom as independent (in terms of correlation of bugs) as desirable~\cite{KNIGHT1985159}.
 This means that differential testing via separate implementations of
-functionality is usually only performed  in cases of extremely complex specifications implemented by
+functionality is usually only performed in cases of extremely complex specifications implemented by
 radically separated teams (e.g., compilers and file systems) with
 orthogonal incentives to produce their own implementations, or for very
 simple specifications such as data structures.  Code synthesis by AI
@@ -74,7 +76,7 @@ controlled divergence that may exceed that of human developers.  If
 the development cost of multiple implementations is radically reduced,
 the advantages of differential specification are clear.
 
-One pre-AI way to work around the cost of a second implementation, of
+Furthermore, one pre-AI way to work around the cost of a second implementation, of
 course, is to use differential fuzzing in a \emph{regression} setting,
 comparing a new version of software to an older, better-tested
 version.  However, in practice, new versions of a software system are often introduced precisely
@@ -88,30 +90,38 @@ the power of differential testing.  Again, LLMs are probably
 well-suited to constructing and maintaining version mappings at low
 cost\footnote{We believe this wil be especially true if LLMs have
   access to a high-quality DSL for constructing differential
-  harnesses, which is one of the goals of this proposal.}.
+  harnesses, which is one of the goals of this proposal.}.  Therefore,
+differential testing (and fuzzing) is \emph{much more practical and
+  widely applicable in an era of agentic coding.}
 
 Second, differential approaches seem ideal for probing ambiguities in
-specifications presented to AIs, and AI misunderstandings:  if
+prompts/specifications presented to AIs, and AI misunderstandings: if
 multiple implementations are produced from a specification, and
 checked for equivalence, supervisors of AI-driven development can
 examine cases where the AI's ``view'' of the software's behavior is
 unstable, and can work to remove ambiguity and correct mistakes.
+Agentic coders can automatically refer ambiguities they cannot
+resolve, discovered during their own automatic testing of multiple
+efforts to satisfy a specification, to human judges.  Therefore,
+differential testing (and fuzzing) is \emph{also a potentially
+  critical technology for ensuring AI-generated code actually
+  satisfies fully specified human goals.}
 
 Differential fuzzing is, of course, already an important practice,
-particularly in security-critical code development.  However,
+particularly in security-critical domains and core systems infrastructure development.  However,
 differential fuzzing as practiced now is often limited in
 effectiveness.  All too often, the approach taken is to independently
 fuzz two implementations, then compare their behavior over the union
 of the produced corpuses of interesting inputs.  While this can
 discover bugs, it is effectively throwing away most of the power of
 fuzzing, in two important ways.  First, the implementations are only
-tested differentially for a small number of inputs, the final results
+tested differentially for a small number of inputs, the ``final outputs''
 of fuzzing runs on the two separate systems; this misses out on the
 opportunity to detect divergence and bugs on potentially millions or
 billions of executions.  Second, the two independent corpuses are only
 derived from efforts to cover behaviors of the two systems
 independently; if an input does not produce novelty in terms of either system
-in isolation, but represents a unique \emph{pair of coverage patterns} for a
+in isolation, but represents a unique \emph{relationship between coverage patterns} for a
 shared input, this method is simply incapable of identifying and
 exploiting such inputs.  Such inputs, however, are, intuitively, the
 most promising in terms of detecting divergences in implementation behaviors.
@@ -121,13 +131,12 @@ implementations in such a way that a fuzzer can see the combined
 coverage of both systems, essentially a program path over the merged
 program {\tt r1 =
   f(x); r2 = g(x); assert (r1==r2);}.  This overcomes the above
-objections, but still in fact leaves much to be desired, in terms of
+objections in part, but still in fact leaves much to be desired, in terms of
 taking advantage of the differential nature of the specification.
-
 
 In computer science, fully leveraging an approach tends to require
 making it truly \emph{first-class}, supported by language and analysis
-tools; without OO constructs or native-language threads, objects and
+tools; without OO constructs or language-native threads, objects and
 concurrency are limited in applicability, and the recent jump in
 sophisticated usage of functional programming techniques in mainstream
 languages can essentially be traced to the widespread availability of
@@ -156,10 +165,10 @@ greatly limited by the lack of such first-class tools for exploiting
 the fact that a very large number of software problems can be defined
 as doing ``(almost) the same thing'' as another system.  This proposal
 aims to address that limitation via \emph{first class differential
-  fuzzing} and \emph{first class differential specification}.
-
-
-
+  fuzzing} and \emph{first class differential specification}; in
+particular the first idea introduces completely new notions of
+\emph{relational coverage} and \emph{provenance-based} interestingness
+of observed program behaviors.
 
 \section{Intellectual Merit}
 \input{merit}

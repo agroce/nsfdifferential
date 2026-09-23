@@ -7,12 +7,12 @@ kind of abstraction of regression testing; the most important case for
 software security is the large body of fundamental systems software
 that implements functionality that is repeatedly implemented because
 it is so foundational to a variety of software systems.  Such
-``ubiquitous'' software artifacts (compilers, file systems,
+``ubiquitous'' software artifacts (e.g., compilers, file systems,
 cryptographic algorithms, regular expression tools, data structures)
 are notably also frequently involved in particularly dangerous
 software vulnerabilities, because they are so widely used in different
 systems, and invoked in low-level code including core security
-functionality and operating system settings that operates with
+functionality and operating system contexts that operate with
 elevated privileges or direct impact on security properties of a system.
 
 \subsection{First-Class Differential Fuzzing}
@@ -22,7 +22,7 @@ In order to understand the limits of current approaches, it is useful
 to think about a very simplified description of what a modern
 mutation-based fuzzer such as AFL++~\cite{AFLplusplus-Woot20},
 libFuzzer~\cite{libFuzzer}, or Google's Centipede~\cite{centipede}, does, at a
-high level that essentially applies to all fuzzers:
+high level that essentially applies to all widely-used fuzzers:
 
 \begin{enumerate}
 \item First, a fuzzer selects an input, a \emph{seed} that it has already executed
@@ -58,7 +58,7 @@ high level that essentially applies to all fuzzers:
   program, searching for bugs.
 \end{enumerate}
 
-First, NEZHA's fundamental contribution was making a tuple
+NEZHA's fundamental contribution was making a tuple
 representation of coverage across compared methods,
 $\langle \text{cov}(f), \text{cov}(g) \rangle$. This is a huge advance on
 simply attempting to cover both implementations independently, then
@@ -83,7 +83,7 @@ However, despite missing the fact that their grey-box approach to
 $\delta$-based novelty is likely simply equivalent to a
 single-compiled-binary AFL/AFL++ approach, the NEZHA paper shows how
 to \emph{take differential fuzzing seriously}.  This proposal aims to
-go beyond this approach by modifying fuzzer internals (implemented on
+go beyond that initial approach by modifying fuzzer internals (implemented on
 top of the industry-standard AFL++ platform) to take advantage of the
 differential problem in all stages of the basic fuzzing algorithm
 presented above:
@@ -235,7 +235,7 @@ problem is therefore significant in the setting of the study, manual difference
 testing between different versions of the same software system.  It is
 much more important in a differential fuzzing context, where hundreds
 or thousands of false positives may be generated, behavior is more
-likely to be found in obscure space of the system state space, and the
+likely to be found in obscure, ill-understood parts of the system state space, and the
 comparison may be between truly independent implementations of a standard
 functionality, rather than versions of the same software system.
 
@@ -265,7 +265,7 @@ classes:
       focused on using differential testing as a means for detecting
       very subtle bugs and obscure behaviors, not using differential
       testing primarily as an additional, easy-to-apply, extension of
-      unit tests.  File system and cryptographic algorithm
+      unit tests.  File system, compiler, and cryptographic algorithm
       differential testing and other high-stakes systems software
       where non-developer testing experts may be involved is a
       paradigmatic instance of this kind of high-effort differential
@@ -274,9 +274,13 @@ classes:
 
 These two modes of differential testing/fuzzing naturally suggest two
 modes of specification.  In the first case, the ideal implementation
-of differential fuzzing takes as input two binaries, and compares
+of differential fuzzing takes as input exactly two binaries, and compares
 their behavior, with no additional work required by the user.  In some
-cases, this is sufficient.  More commonly, however, some complexity
+cases, ``difference'' may even be left as the simple case where one
+system crashes or returns an error code and the other does not.
+
+In a few
+cases, this is sufficient.  More commonly, however, considerable complexity
 remains:  two systems may produce output on a channel such as a file
 or stdout/stderr that is almost identical, but diverges in, e.g., the
 content of text messages.  In other cases, behavior may not be so
@@ -288,10 +292,10 @@ the command line, including potentially inline regexps or
 configuration files to control allowed divergence in text-based
 outputs, but the triage problem of understanding divergences is a
 major burden on users.  We propose to not only implement and classify
-an extensive set of composable, customizable behavioral comparison
-functions, but develop automated calibration methods that use the
+an extensive set of composable, customizable, behavioral comparison
+functions, but develop \emph{automated calibration methods} that use the
 ability of fuzzing to produce a statistically large number of
-behaviors to estimate a good comparison function.  Inferring a change
+behaviors in order to estimate a good comparison function.  Inferring a change
 in output message from a large body of stdout traces that differ only
 by a regexp substitution is the kind of task that can and should be
 automated, and a configuration generator can reduce the risk of such
@@ -316,9 +320,64 @@ system, and this has to be handled by intercepting and modifying calls
 to a ``real'' file system appropriately~\cite{ICSEDiff}), or where the
 mapping between inputs and outputs to the two systems is far too
 complex to infer from statistical observation, and must be modeled by
-a domain expert.
+a domain expert.  Moreover, in such settings, there may be a goal of
+using the differential harness for multiple pairs of systems, with
+some kind of configuration file controlling the details of the
+particular specification to be used.
 
-WRITE MORE ABOUT THIS PART, BRING IN TSTL
+\begin{figure}
+\begin{code}
+pool: <int> 4
+pool: <avl> 3
+
+property: <avl>.check\_balanced()
+
+<int> := <[1..20]>
+<avl> := avl.AVLTree()
+
+<avl>.insert(<int>)
+<avl>.delete(<int>)
+<avl>.find(<int>)
+<avl>.inorder()
+~<avl> == ~<avl>
+
+reference: avl.AVLTree ==> set
+reference: insert ==> add
+reference: delete ==> discard
+reference: find ==> \_\_contains\_\_
+reference: METHOD(inorder) ==> CALL(items)
+
+compare: find
+compare: inorder
+\end{code}
+\caption{A TSTL differential harness.}
+\label{fig:avl}
+\end{figure}
+
+In previous work, we developed the TSTL (Template Scripting Testing
+Language)~\cite{NFM15,tstlsttt}, which was used for the testing of the
+Pyfakefs mock file system mentioned
+above~\cite{pyfakefs,TSTLHarness}.  TSTL produces unit tests of Python
+programs using a nondeterministic, pool-based, approach, and includes
+unique features to support more complex forms of differential testing.  A simple
+differential harness for an AVL tree implementation is shown in
+Figure~\ref{fig:avl}.  TSTL lets users specify a testing problem
+(here, that of testing an AVL tree) in terms of a single system under
+test (SUT) and provide mappings between test actions for the SUT and a
+reference implementation in the form of transforms that generate
+``mirror'' actions to be performed on the reference.  Here, for
+example, a new {\tt AVLTree} construction is always mirrored by
+creation of an empty Python {\tt set}.  More complex transforms than
+mere name changes are also possible, e.g., where inorder traversal of
+an AVL's contents (a method call) is mapped to a function call on a
+set.  Users can specify when the return values of actions are to be
+compared for equivalence, and can provide Python-coded abstraction
+functions over inputs or outputs as needed.  The TSTL approach was
+designed to enable differential testing in settings such as file
+systems where system behavior over a series of stateful actions is to
+be compared, not just single function calls.
+
+
 
 Conceptually, the key feature of differential specification is that
 the core of the problem is \emph{avoiding false positives}: in
