@@ -323,7 +323,9 @@ complex to infer from statistical observation, and must be modeled by
 a domain expert.  Moreover, in such settings, there may be a goal of
 using the differential harness for multiple pairs of systems, with
 some kind of configuration file controlling the details of the
-particular specification to be used.
+particular specification to be used.  In general, this problem is
+complex and unique enough to merit the use of a Domain Specific
+Language (DSL)~\cite{mernik2005domain,fowler2010domain}.
 
 \begin{figure}
 \begin{code}
@@ -377,7 +379,67 @@ designed to enable differential testing in settings such as file
 systems where system behavior over a series of stateful actions is to
 be compared, not just single function calls.
 
+While the TSTL approach is effective, allowing the complex Pyfakefs
+harness, which resulted in discovery and correction of more than 100 bugs in Pyfakefs
+(and one bug on Mac OS/BSD {\tt rename}), to consist of only 124
+non-comment lines, while supporting full reference comparison of both
+Windows and Mac OS/linux filesystems with Pyfakefs mocks, it
+also has serious limitations.
 
+Most importantly, any DSL for differential testing is
+likely to either embed a full programming language (as does TSTL) or
+be embedded in a full programming language~\cite{fowler2010domain}.
+The TSTL approach has benefits, including the elimination of redundant
+and complex code for representing nondeterministic choice of test
+actions, but in general for most differential fuzzing problems it is
+preferable to embed the DSL in a host language.   TSTL's adoption was
+always limited by the need to learn a new programming language, a
+potentially daunting task; testing and verification systems such as
+JUnit~\cite{junit}, GoogleTest~\cite{GoogleTest}, CBMC~\cite{CBMC},
+FuzzTest~\cite{FuzzTest}, and DeepState~\cite{DeepState} that ``meet
+developers where they are''~\cite{meeting} without requiring users to
+learn a new language have always proved more successful and widely adopted.
+In particular, most
+of the critical target programs for complex differential harnesses are
+written in C or C++ (like most systems and low-level software), and
+ideally a solution would have the following features:
+
+\begin{enumerate}
+\item Easily support testing of C and C++ target code.
+  \item Integrate seamlessly with existing tools for expressing
+    property-driven fuzzing problems in C and C++, such as Google
+    FuzzTest~\cite{FuzzTest} and Trail of Bits'
+    DeepState~\cite{DeepState,deepstaterepo}.
+  \end{enumerate}
+
+FuzzTest is a promising system to integrate with because it is widely
+used and has the institutional credibility of Google behind it; it
+also provides a good baseline for non-first-class but known-effective
+fuzzing for differential problems.  DeepState, in contrast, both
+provides full support for API-call-sequence fuzzing problems like
+file system testing (which is unforunately inherently awkward using
+FuzzTest's API) and can make use of our improved, differential-aware,
+versions of AFL++.
+
+The critical difficulty is how to satisfy these requirements, which
+essentially require a DSL embedded within an existing language (for
+integration with FuzzTest/DeepState), without losing the power of TSTL's notation to express ``mirroring''
+of actions by transforms of calls or actions on a single target
+system, which is extremely concise and expressive, and removes many potential sources
+of error in writing a differential harness.  In practice, determining
+the best way to do this will require substantial effort, but our
+preliminary experiments in this direction suggests that a kind of
+hybrid DSL approach, with a comment-embedded language (like doxygen, JML,
+and other methods that work via semantically-meaningful comments) that
+constructs macro definitions that safely apply transforms to seemingly
+single-target C and C++ code is one possible solution.  This would mix
+the typical FuzzTest/DeepState approach to expressing calls to tested
+functions, where such calls simply appear as normal C/C++ code, with
+an auto-coding step where a set of TSTL-style {\tt reference} and
+other transform indicators map out an expanded version of the harness
+to compile and run.  Such mappings could also potentially provide some
+support for call-sequences testing for FuzzTest, since a transform
+step is already being applied to the fuzzing harness.
 
 Conceptually, the key feature of differential specification is that
 the core of the problem is \emph{avoiding false positives}: in
@@ -385,7 +447,14 @@ traditional, assertion-based testing, or even property-based testing,
 specification effort is usually largely invested in defining failure; in differential
 testing, the effort is in avoiding reporting spurious failures, since
 the default equality relation defines all but a very small set of
-executions as failing, with no additional effort.
+executions as failing, with no additional effort.  This means that in
+automatic calibration of differential specifications, the impetus is
+on the fuzzing to explore the system sufficiently to identify
+likely-spurious, systematic, differences and present them for user
+approval, and in manual harness construction the impetus is on the DSL
+to support ways to express qualifications and modifications of the
+differential specification that are frequently used, and invoke
+abstractions and type transforms in an easily read and easily modified way.
 
 \subsection{PI Qualifications}
 
@@ -394,7 +463,7 @@ including involvement in design and development of well-known fuzzing
 and testing tools, including the TSTL testing tool for Python, and the DeepState
 unit-fuzzing interface for C++ and C code; he is at present lead developer and
 maintainer for multiple open source testing and fuzzing tools, with over 100
-GitHub stars (and, in one case, more than 800 stars); he has, in the
+GitHub stars (and, in one case, more than 800 stars: DeepState); he has, in the
 past, managed releases of industrial open source testing tools with
 more than 3000 GitHub stars.  
 Groce typically reports 50-100
