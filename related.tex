@@ -4,28 +4,63 @@ Previous work on differential testing is considerable, but previous
 work on \emph{general mechanisms} for either finding differences in versions
 or specifying differential comparison problems is relatively limited.
 
-\paragraph{Differential testing (and fuzzing) for specialized settings:}
+\subsection{Differential Testing (and Fuzzing) for Specialized Settings:}
 McKeeman's paper on using differential testing to find bugs in
 compilers is the earliest and most influential work in the
-field~\cite{Differential}.  Compiler testing (as well as other
-language tool testing, e.g., for debuggers~\cite{lehmann2018feedback} or static analysis tools~\cite{StaticDiff}) has a long and
+field~\cite{Differential}, and essentially formally defined the
+general concept of differential testing, albeit in a single, specific domain.  Compiler testing (as well as other
+language tool testing, e.g., for debuggers~\cite{lehmann2018feedback}
+or static analysis tools~\cite{StaticDiff}) has a long and
 distinguished line of work based in differential
-approaches~\cite{barany2018finding,chen2019deep,chen2016coverage}; indeed, by and large
-differential testing is the only means for finding wrong-compile bugs
-that is in widespread use, and is essential to the success of tools
-such as Csmith~\cite{csmith}. File systems have also been a target
-for differential approaches~\cite{ICSEDiff}.  Recently machine
-learning systems have also been a focus of differential
+approaches~\cite{barany2018finding,chen2019deep,chen2016coverage};
+indeed, by and large differential testing is the only means for
+finding wrong-compile bugs that is in widespread use, and is essential
+to the success of tools such as Csmith~\cite{csmith}.  Klinger et al.~\cite{klinger2019differentially} similarly apply differential testing to check soundness and precision across program analyzers, an approach conceptually adjacent to our own differential evaluation of static analysis tools~\cite{StaticDiff}.
+
+File systems
+have also been a target for differential approaches~\cite{ICSEDiff}.
+Recently machine learning systems have also been a focus of
+differential
 approaches~\cite{herbold2023differential,li2026enhancing}.  Security
 and privacy testing also makes significant use of differential
 approaches~\cite{jung2008privacy,chen2015guided}; a notable recent
-example is the work of Pengbo et al.~\cite{nie2023coverage} that
+example is the work of Nie et al.~\cite{nie2023coverage} that
 discovered 11 novel root causes of X.509 certificate validation
 divergences between SSL/TLS implementations, and demonstrated that RFC
-5280 is fundamentally ambigious.
+5280 is fundamentally ambigious.  Differential approaches have also
+been used to detect timing and other side-channel
+leaks~\cite{nilizadeh2019diffuzz} and to expose platform-dependent
+behavioral divergence in heterogeneous
+applications~\cite{zhang2021heterofuzz}. Fine-grained differential
+fuzzing has recently been pushed into JavaScript engines as well,
+targeting semantic divergence below the level of crash
+detection~\cite{wachter2025dumpling}.  All of these domains may
+provide interesting case studies and benchmarks for this proposal.
 
-\paragraph{Differential testing and fuzzing as a first-class problem:}
-As noted, the most important such work, with respect to detection of
+Rigger, Ba, Su and others~\cite{Rigger2020PQS,Rigger2020TLP,Ba2024DQP} have
+produced a substantial body of work on testing databases using
+differential \emph{inputs} that could map to a differential fuzzing
+problem, by extending our approach's insights to apply to cases where
+part of a test problem is held constant (e.g., the database under test
+plus a differential query plan pair) and another part (database
+contents or database system configurations options) is varied.  We
+believe that additional, perhaps surprising, problems that can be
+fruitfully treated as differential
+behavior discovery can be identified once differential fuzzing is made
+highly effective and differential specification is made less onerous.
+Here the underlying approaches are (in the case of the differentail
+query plans paper) explicitly identified as ``differential'' but not
+in the way usually considered in differential fuzzing.
+
+The recent work of Jeong et al. on differential fuzzing of Ethereum
+consensus clients is interesting for exploring both generation and
+specification aspects of the problem~\cite{Jeong2026SpecTrum}.
+Similarly, Yang et al.~\cite{yang2021consensus} used multi-transaction
+differential fuzzing to find consensus bugs across Ethereum client
+implementations, which form a particularly interesting setting where independently-implemented ``same functionality'' is security-critical.
+
+\paragraph{Differential Testing, Fuzzing, and Specification as a First-class Problem:}
+As noted, the most important such work, with respect to \emph{detection} of
 differential bugs, is probably that of Petsios et
 al. on the NEZHA framework~\cite{nezha}.  As discussed extensively
 above, this work revitalized interest in the problem of working out
@@ -38,9 +73,40 @@ libFuzzer-like novelty functions, the general
 framework for posing the problem and focusing on executions that can
 reveal differences is a major precursor to this proposal's approach.
 
+Böhme et al.~\cite{bohme2021residual} formalized residual risk and
+discovery-probability estimation for greybox campaigns, and Baez et
+al.~\cite{baez2025evt} extended this style of analysis specifically to
+differential fuzzing using extreme value theory, giving a principled
+way to estimate the probability that continued fuzzing will expose a
+larger divergence.
+
+Person et al.~\cite{Person2008DSE} explored using symbolic execution
+to solve general differential testing problems, and while the proposed
+methods have generally not been found to scale to most software
+systems, the basic idea of characterizing behavioral differences
+informs this proposal, including the idea of an AFL++ mode that
+characterizes behavior changes as likely intended or unintended (based on both nature and
+frequency of occurrence) based on large bodies of coverage-driven
+exploration rather than symbolic execution.
+
 PI Groce's previous work in
 the TSTL testing framework for Python is, to our knowledge, the most
 extensive previous effort to make differential specification an easier
 problem, by mapping sequences of actions over two implementations into
 each other, and allowing for use of abstraction functions over inputs
-and outputs in such a setting~\cite{ISSTA15,tstl}.
+and outputs in such a setting~\cite{ISSTA15,tstl}.  However, the idea
+of comparative or variant testing as critical to testing DSLs or
+languages has been understood, if not heavily explored at the language
+level, since early work on e.g., \emph{lava}~\cite{Sirer1999Lava}.
+
+The Knight-Leveson work on
+correlated failures in ``N-version'' software~\cite{KNIGHT1985159} famously suggested that
+the fruits of differential testing might be less substantial than
+anticipated, a problem for which we believe agentic/AI coding may now provide a
+substantial solution.  Differential testing is one of the most
+interesting solutions to the general problem of constructing
+high-powered oracles for software testing~\cite{Barr2015}.
+Metamorphic testing can be seen as an attempt to apply differential
+testing without requiring actual multiple versions of
+code~\cite{Segura2016}. The work of Rigger, Ba, and Su above on
+databases is a form of metamorphic testing, for the most part.

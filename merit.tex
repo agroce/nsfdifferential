@@ -17,12 +17,19 @@ elevated privileges or direct impact on security properties of a system.
 
 \subsection{First-Class Differential Fuzzing}
 
+\begin{figure}
+  \centering
+  \includegraphics[width=0.5\columnwidth]{basic_fuzzing.png}
+  \caption{The ``standard fuzzing algorithm''.}
+  \label{fig:original}
+  \end{figure}
 
 In order to understand the limits of current approaches, it is useful
 to think about a very simplified description of what a modern
 mutation-based fuzzer such as AFL++~\cite{AFLplusplus-Woot20},
 libFuzzer~\cite{libFuzzer}, or Google's Centipede~\cite{centipede}, does, at a
-high level that essentially applies to all widely-used fuzzers:
+high level that essentially applies to all widely-used fuzzers (shown
+graphically in Figure~\ref{fig:original}):
 
 \begin{enumerate}
 \item First, a fuzzer selects an input, a \emph{seed} that it has already executed
@@ -161,17 +168,37 @@ presented above:
  input E.  The small change made to the input did not change the
  behavior of function $f$ but dramatically changed the behavior of
  function $g$.  Had F been produced from D, on the other hand, the
- beahvior of \emph{both} $f$ and $g$ would be seen to be changed, and the
+ behavior of \emph{both} $f$ and $g$ would be seen to be changed, and the
  previously seen path therefore uninteresting.  This potentially highly significant fact is invisible
  unless the fuzzer is aware of the structure of the fuzzing problem,
  and both distinguishes $f$ and $g$ behaviors \emph{and} makes use of
- the \emph{provenance} of fuzzing inputs, so that behavior change or lack
+ the \emph{provenance} of fuzzing inputs, so that \emph{relative} behavior change or lack
  of change can be \emph{observed} and \emph{exploited} as a signal of
  behavioral divergence.  In short, we aim to exploit a new kind of
  signal for fuzzing: \emph{relational coverage} between compared
  programs, where not only coverage itself matters, but the
  \emph{relation between changes in coverage, in terms of both
    existence and magnitude}, given fixed changes in input.
+
+ While we do not have a full, usable, implementation of even our basic
+ ideas,
+ preliminary results using a very simple non-production quality hand-made
+ mutational, coverage-driven  (based on Python's
+ trace facilities)
+ fuzzer for inputs to a pair of Python AVL tree implementations do show a
+ significant (roughly 10\%) improvement in time-to-detect-divergence
+ when divergence in response to inputs is used in addition to standard
+ AFL++/NEZHA style sequential coverage tuples.  However, it is
+ possible the particular bug and design decisions in the alternative
+ implementation of AVL trees were unintentionally influenced by our beliefs about
+ the importance of relative feedback, and the magnitude of the change
+ is probably in large part due to our extremely inefficient
+ implementation of the core fuzzing and coverage instrumentation.
+ Unfortunately, preliminary results for more realistic benchmarks require
+ implementation inside a realistic fuzzer such as AFL++, which is a
+ substantial engineering effort, though as reported below, a team of
+ two senior NAU undergraduate students is now beginning work on such
+ an implementation.
 
  All of the above proposed differential adaptations of the core
  mutation-driven fuzzing algorithm are derived from this insight that
@@ -205,6 +232,15 @@ presented above:
  elevating the signal on divergence in shared code seems at minimum
  deserving of empirical exploration.
 
+Figure~\ref{fig:modified} shows a preliminary sketch of the full set
+of proposed possible first-class differential-aware fuzzing algorithm.
+
+\begin{figure}
+  \includegraphics[width=0.8\columnwidth]{diff_fuzzing.png}
+  \caption{Proposed differential-aware fuzzing algorithm changes.}
+  \label{fig:modified}
+  \end{figure}
+ 
  \subsection{First-Class Differential Specification}
 
 Lack of fuzzer awareness of differential structure contributing to
@@ -305,8 +341,8 @@ users in an easily-understood format, e.g.:
 \begin{code}
 - Version B consistently replaces``FILE OR DIRECTORY'' with 
 ``FILE/DIRECTORY'' in stderr messages
-- Version B consistently reorders the {\emph rename} and {\emph close}
-POSIX calls from {\emph rename --> close} to {\emph close --> rename}
+- Version B consistently reorders the \emph{rename} and \emph{close}
+POSIX calls from \emph{rename --> close} to \emph{close --> rename}
 - Version B omitted a call to \emph{clock\_gettime()} from 95\% of
 all observed executions; a set of representatives of the 5\% of cases
 still calling this function were saved to the {\tt exceptions/} directory
@@ -384,9 +420,34 @@ harness, which resulted in discovery and correction of more than 100 bugs in Pyf
 (and one bug on Mac OS/BSD {\tt rename}), to consist of only 124
 non-comment lines, while supporting full reference comparison of both
 Windows and Mac OS/linux filesystems with Pyfakefs mocks, it
-also has serious limitations.
+also has serious limitations.  For one thing, many problems included
+in the general form of the differential problem, $P(x)
+\Rightarrow O_f(f(I_f(x))) = O_g(g(I_g(x)))$, are only weakly
+supported by TSTL; for example, while TSTL allows users to specify
+that some test actions may throw expected exceptions, it does not
+provide a way to distinguish exceptions that can be thrown only by
+particular versions of the code, which can lead to false negatives in
+testing, when an implementation throws an exception that is allowable
+in a different implementation, but not in this one (e.g., consider the
+case where one data structure implementation throws a Python {\tt
+  KeyError} to indicate an item was not found, and another throws a
+custom exception.  If the implementation throwing a custom exception
+has an actual internal bug that produces a {\tt KeyError} it will not
+be detected (since this will happen in the context of a {\tt find}
+operation or similar pure operation with no detectable state change
+consequences).  Fully identifying all commonly used differential
+idioms (e.g., mapping allowed exceptions to different implementations)
+and making them available to developers of complex harnesses is a key
+goal of this project.  We expect that it is possible in some cases
+identification of differential specification idioms may lead to
+identification of opportunities to provide better feedback to the
+actual fuzzing algorithms (e.g., to inform the fuzzer when behavior
+being explored does not satisfy preconditions for one of the
+implementations, so is less interesting than inputs that actually
+produce executions of all implementations to differentially compare,
+and so should be given a lower energy value or ranking in queue).
 
-Most importantly, any DSL for differential testing is
+More importantly, any DSL for differential testing is
 likely to either embed a full programming language (as does TSTL) or
 be embedded in a full programming language~\cite{fowler2010domain}.
 The TSTL approach has benefits, including the elimination of redundant
@@ -479,8 +540,7 @@ has consistently involved a marriage of theory of testing and
 analysis with practical work oriented towards real-world
 developers, implemented in working tools (all, as will be the case with this
 project, released as open source).  Groce is author of one of the
-most-cited papers on differential testing~\cite{ICSEDiff} (the 7th
-most cited paper on the topic, according to Google scholar) and the TSTL testing
+most-cited papers on differential testing~\cite{ICSEDiff} and the TSTL testing
 DSL for Python was the first (and, to our knowledge, thus far
 \emph{only}) such language to include automation of
 differential harness construction, including complex mappings on inputs and
